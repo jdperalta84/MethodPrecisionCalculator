@@ -1,0 +1,10 @@
+Method: D2622-21
+Unit: mg/kg
+Average (X): 1.20 mg/kg
+Absolute Difference: 0.16 mg/kg
+
+Repeatability (r): 0.16 mg/kg - PASS
+Reproducibility (R): 0.50 mg/kg - PASS
+
+0.75R: 0.37 mg/kg
+Tolerance Range: 0.83 to 1.57 mg/kg
