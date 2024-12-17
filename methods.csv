@@ -8,3 +8,5 @@ D93-20 A,,,°C,(0.029 * avg),(0.071 * avg),4,,,Procedure A for D93-20,
 D93-20 B (Residual Fuel Oil),2,6,°C,,,,,,100,Procedure B for residual fuel oil
 D93-20 B (Other Types),5,10,°C,,,,,,100,Procedure B for other types
 D93-20 C,8.4,14.7,°C,,,,,,100,Procedure C for D93-20
+D97-17b (Lubricating Oil),6,9,°C,,,,,,51,Lubricating oil pour point test method
+D97-17b (Middle Distillate and Residual Fuel),3,9,°C,,,,,,51,Middle distillate and residual fuel pour point test method
