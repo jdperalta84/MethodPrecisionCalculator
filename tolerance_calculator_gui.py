@@ -16,11 +16,20 @@ def load_methods_from_csv(file_path):
                     "R": float(row["R"]) if row["R"] else None,
                     "unit": row["Unit"],
                     "formula_r": row["Formula_r"],
-                    "formula_R": row["Formula_R"]
+                    "formula_R": row["Formula_R"],
+                    "Number_of_Decimals": int(row["Number_of_Decimals"]) if row["Number_of_Decimals"] else 4,
+                    "Lower_Limit": float(row["Lower_Limit"]) if row["Lower_Limit"] else 0.0,
+                    "Upper_Limit": float(row["Upper_Limit"]) if row["Upper_Limit"] else 10000000.0
                 }
     except Exception as e:
         messagebox.showerror("Error", f"Error loading methods: {e}")
     return methods_dict
+
+
+# Function to validate input
+def validate_input(value, lower_limit, upper_limit):
+    if not lower_limit <= value <= upper_limit:
+        raise ValueError(f"Value must be between {lower_limit} and {upper_limit}")
 
 
 # Load methods from the CSV file
@@ -29,60 +38,65 @@ methods = load_methods_from_csv("methods.csv")
 
 def calculate_tolerance():
     try:
-        # Validate input
-        value1 = float(value1_entry.get())
-        value2 = float(value2_entry.get())
+        # Fetch method details
         selected_method = method_combobox.get()
         if selected_method not in methods:
             raise ValueError("Please select a valid method.")
-        if value1 < 0 or value2 < 0:
-            raise ValueError("Values must be non-negative.")
 
-        # Fetch method details
         method = methods[selected_method]
+
+        # Get the unit for this method
         unit = method["unit"]
+
+        # Validate and get the input values
+        value1 = float(value1_entry.get())
+        value2 = float(value2_entry.get())
+        validate_input(value1, method["Lower_Limit"], method["Upper_Limit"])
+        validate_input(value2, method["Lower_Limit"], method["Upper_Limit"])
+
+        # Calculate the average
         avg = (value1 + value2) / 2
+
+        # Calculate the absolute difference
         diff = abs(value1 - value2)
 
-        # Calculate r and R
+        # Calculate r and R (handle both static values and formulas)
         if method["formula_r"]:
             r = eval(method["formula_r"], {"avg": avg})
         else:
-            r = method["r"]
+            r = method["r"] if method["r"] else 0
 
         if method["formula_R"]:
             R = eval(method["formula_R"], {"avg": avg})
         else:
-            R = method["R"]
+            R = method["R"] if method["R"] else 0
+
+        # Calculate pass/fail for r and R
+        r_pass = diff <= r
+        R_pass = diff <= R
 
         # Calculate 0.75R and tolerance range
         tolerance_075R = 0.75 * R
         tolerance_min = avg - tolerance_075R
         tolerance_max = avg + tolerance_075R
 
-        # Determine Pass/Fail
-        r_pass = diff <= r
-        R_pass = diff <= R
-
-        # Display results
+        # Results string formatting
         result_text = (
             f"Method: {selected_method}\n"
             f"Unit: {unit}\n"
-            f"Average (X): {avg:.2f} {unit}\n"
-            f"Absolute Difference: {diff:.2f} {unit}\n\n"
-            f"Repeatability (r): {r:.2f} {unit} - {'PASS' if r_pass else 'FAIL'}\n"
-            f"Reproducibility (R): {R:.2f} {unit} - {'PASS' if R_pass else 'FAIL'}\n\n"
-            f"0.75R: {tolerance_075R:.2f} {unit}\n"
-            f"Tolerance Range: {tolerance_min:.2f} to {tolerance_max:.2f} {unit}"
+            f"Average (X): {avg:.{method['Number_of_Decimals']}f} {unit}\n"
+            f"Absolute Difference: {diff:.{method['Number_of_Decimals']}f} {unit}\n\n"
+            f"Repeatability (r): {r:.{method['Number_of_Decimals']}f} {unit} - {'PASS' if r_pass else 'FAIL'}\n"
+            f"Reproducibility (R): {R:.{method['Number_of_Decimals']}f} {unit} - {'PASS' if R_pass else 'FAIL'}\n\n"
+            f"0.75R: {tolerance_075R:.{method['Number_of_Decimals']}f} {unit}\n"
+            f"Tolerance Range: {tolerance_min:.{method['Number_of_Decimals']}f} to {tolerance_max:.{method['Number_of_Decimals']}f} {unit}"
         )
         result_label.config(text=result_text)
 
-        # Highlight Pass/Fail
-        pass_fail_text = f"r: {'PASS' if r_pass else 'FAIL'}, R: {'PASS' if R_pass else 'FAIL'}"
-        pass_fail_color = "green" if r_pass and R_pass else "red"
-        pass_fail_label.config(text=pass_fail_text, fg=pass_fail_color)
     except ValueError as e:
         messagebox.showerror("Input Error", str(e))
+    except Exception as e:
+        messagebox.showerror("Error", f"An unexpected error occurred: {e}")
 
 
 def save_results():

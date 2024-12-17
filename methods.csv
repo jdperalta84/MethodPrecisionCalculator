@@ -1,5 +1,6 @@
-Method,r,R,Unit,Formula_r,Formula_R
-D5191,0.13,0.23,kPa,,
-D86,0.15,0.3,kPa,,
-FormulaMethod,,,kPa,0.1 * avg,0.2 * avg
-D2622-21,,,mg/kg,0.1402 * avg**0.8495,0.4273 * avg**0.815
+Method,r,R,Unit,Formula_r,Formula_R,Number_of_Decimals,Lower_Limit,Upper_Limit,Notes,
+D5191,0.13,0.23,kPa,,,,4,50,150,Standard vapor pressure measurement method
+D86,0.15,0.3,kPa,,,,4,30,200,Used for distillation tests
+D2622-21,,,mg/kg,(0.1402 * avg**0.8495),(0.4273 * avg**0.815),4,2,30000,Sulfur measurement for petroleum products,
+D56-22 LT,,,°C,(0.0685 * (x - 20)),(0.0318 * (x + 60)),4,34,60,Low temperature flash point test method,
+D56-22 HT,1.6,5.8,°C,,,,4,34,93,High temperature flash point test method
