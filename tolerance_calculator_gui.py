@@ -3,24 +3,31 @@ from tkinter import ttk, messagebox
 import csv
 
 
-# Function to load methods from CSV
+# Function to load methods from CSV with encoding fallback
 def load_methods_from_csv(file_path):
     methods_dict = {}
     try:
-        with open(file_path, mode="r") as file:
-            csv_reader = csv.DictReader(file)
-            for row in csv_reader:
-                method = row["Method"]
-                methods_dict[method] = {
-                    "r": float(row["r"]) if row["r"] else None,
-                    "R": float(row["R"]) if row["R"] else None,
-                    "unit": row["Unit"],
-                    "formula_r": row["Formula_r"],
-                    "formula_R": row["Formula_R"],
-                    "Number_of_Decimals": int(row["Number_of_Decimals"]) if row["Number_of_Decimals"] else 4,
-                    "Lower_Limit": float(row["Lower_Limit"]) if row["Lower_Limit"] else 0.0,
-                    "Upper_Limit": float(row["Upper_Limit"]) if row["Upper_Limit"] else 10000000.0
-                }
+        try:
+            with open(file_path, mode="r", encoding="utf-8") as file:
+                csv_reader = csv.DictReader(file)
+                rows = list(csv_reader)
+        except UnicodeDecodeError:
+            with open(file_path, mode="r", encoding="iso-8859-1") as file:
+                csv_reader = csv.DictReader(file)
+                rows = list(csv_reader)
+
+        for row in rows:
+            method = row["Method"]
+            methods_dict[method] = {
+                "r": float(row["r"]) if row["r"] else None,
+                "R": float(row["R"]) if row["R"] else None,
+                "unit": row["Unit"],
+                "formula_r": row["Formula_r"],
+                "formula_R": row["Formula_R"],
+                "Number_of_Decimals": int(row["Number_of_Decimals"]) if row["Number_of_Decimals"] else 4,
+                "Lower_Limit": float(row["Lower_Limit"]) if row["Lower_Limit"] else 0.0,
+                "Upper_Limit": float(row["Upper_Limit"]) if row["Upper_Limit"] else 10000000.0
+            }
     except Exception as e:
         messagebox.showerror("Error", f"Error loading methods: {e}")
     return methods_dict
@@ -38,49 +45,31 @@ methods = load_methods_from_csv("methods.csv")
 
 def calculate_tolerance():
     try:
-        # Fetch method details
         selected_method = method_combobox.get()
         if selected_method not in methods:
             raise ValueError("Please select a valid method.")
 
         method = methods[selected_method]
-
-        # Get the unit for this method
         unit = method["unit"]
 
-        # Validate and get the input values
         value1 = float(value1_entry.get())
         value2 = float(value2_entry.get())
         validate_input(value1, method["Lower_Limit"], method["Upper_Limit"])
         validate_input(value2, method["Lower_Limit"], method["Upper_Limit"])
 
-        # Calculate the average
         avg = (value1 + value2) / 2
-
-        # Calculate the absolute difference
         diff = abs(value1 - value2)
 
-        # Calculate r and R (handle both static values and formulas)
-        if method["formula_r"]:
-            r = eval(method["formula_r"], {"avg": avg})
-        else:
-            r = method["r"] if method["r"] else 0
+        r = eval(method["formula_r"], {"avg": avg}) if method["formula_r"] else (method["r"] or 0)
+        R = eval(method["formula_R"], {"avg": avg}) if method["formula_R"] else (method["R"] or 0)
 
-        if method["formula_R"]:
-            R = eval(method["formula_R"], {"avg": avg})
-        else:
-            R = method["R"] if method["R"] else 0
-
-        # Calculate pass/fail for r and R
         r_pass = diff <= r
         R_pass = diff <= R
 
-        # Calculate 0.75R and tolerance range
         tolerance_075R = 0.75 * R
         tolerance_min = avg - tolerance_075R
         tolerance_max = avg + tolerance_075R
 
-        # Results string formatting
         result_text = (
             f"Method: {selected_method}\n"
             f"Unit: {unit}\n"
@@ -121,7 +110,7 @@ def show_help():
 # Create the GUI
 root = tk.Tk()
 root.title("Tolerance Calculator")
-root.geometry("450x600")  # Adjusted size for better visibility
+root.geometry("450x600")
 root.resizable(False, False)
 
 # Input fields
@@ -139,7 +128,7 @@ value2_entry.pack(pady=5)
 method_label = tk.Label(root, text="Select Method:")
 method_label.pack(pady=5)
 method_combobox = ttk.Combobox(root, values=list(methods.keys()), font=("Arial", 12))
-method_combobox.set("Select a method")  # Default text
+method_combobox.set("Select a method")
 method_combobox.pack(pady=5)
 
 # Dynamic unit label
