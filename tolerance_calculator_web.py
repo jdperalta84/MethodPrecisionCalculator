@@ -42,8 +42,8 @@ st.markdown("## 🧮 Tolerance Calculator")
 st.sidebar.header("Select Method & Input Values")
 selected_method = st.sidebar.selectbox("Method", list(methods.keys()))
 
-value1 = st.sidebar.number_input("Enter Value 1", format="%.4f", step=0.0001)
-value2 = st.sidebar.number_input("Enter Value 2", format="%.4f", step=0.0001)
+value1 = st.sidebar.number_input("Enter Value 1", value=0.0000, step=0.0001, format="%.4f")
+value2 = st.sidebar.number_input("Enter Value 2", value=0.0000, step=0.0001, format="%.4f")
 
 if selected_method and selected_method in methods:
     method = methods[selected_method]
@@ -57,8 +57,23 @@ if selected_method and selected_method in methods:
         else:
             avg = (value1 + value2) / 2
             diff = abs(value1 - value2)
-            r = eval(method["formula_r"], {"avg": avg}) if method["formula_r"] else method["r"] or 0
-            R = eval(method["formula_R"], {"avg": avg}) if method["formula_R"] else method["R"] or 0
+
+            # Calculate r
+            if method["formula_r"]:
+                r = eval(method["formula_r"], {"avg": avg})
+                r_formula_display = f"`{method['formula_r']}`"
+            else:
+                r = method["r"] or 0
+                r_formula_display = f"**Static value:** {r}"
+
+            # Calculate R
+            if method["formula_R"]:
+                R = eval(method["formula_R"], {"avg": avg})
+                R_formula_display = f"`{method['formula_R']}`"
+            else:
+                R = method["R"] or 0
+                R_formula_display = f"**Static value:** {R}"
+
             r_pass = diff <= r
             R_pass = diff <= R
             tolerance_075R = 0.75 * R
@@ -85,10 +100,11 @@ if selected_method and selected_method in methods:
                     f.write(f"R: {R:.{decimals}f} {'PASS' if R_pass else 'FAIL'}\n")
                 st.success("Results saved to results.txt")
 
-            with st.expander("🧠 Show Calculation Formulas"):
-                st.markdown(f"- **Formula for r**: `{method['formula_r'] or 'N/A'}`")
-                st.markdown(f"- **Formula for R**: `{method['formula_R'] or 'N/A'}`")
-                st.markdown(f"- **Decimals Used**: `{decimals}`")
+            # Show formulas or static values used
+            st.markdown("#### 🧠 Calculation Details")
+            st.markdown(f"- **Formula for r**: {r_formula_display}")
+            st.markdown(f"- **Formula for R**: {R_formula_display}")
+            st.markdown(f"- **Decimals Used**: `{decimals}`")
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
