@@ -30,23 +30,27 @@ def load_methods_from_csv(file_path):
         st.error(f"Error loading methods: {e}")
     return methods_dict
 
+
 # Load methods
 methods = load_methods_from_csv("methods.csv")
 
-st.title("🧮 Tolerance Calculator")
+st.set_page_config(page_title="Tolerance Calculator", layout="wide")
 
-# Sidebar
+st.markdown("## 🧮 Tolerance Calculator")
+
+# Sidebar inputs
 st.sidebar.header("Select Method & Input Values")
 selected_method = st.sidebar.selectbox("Method", list(methods.keys()))
-value1 = st.sidebar.number_input("Enter Value 1")
-value2 = st.sidebar.number_input("Enter Value 2")
+
+value1 = st.sidebar.number_input("Enter Value 1", format="%.4f", step=0.0001)
+value2 = st.sidebar.number_input("Enter Value 2", format="%.4f", step=0.0001)
 
 if selected_method and selected_method in methods:
     method = methods[selected_method]
     unit = method["unit"]
 
     try:
-        # Validate inputs
+        # Validate values
         validate = lambda val: method["Lower_Limit"] <= val <= method["Upper_Limit"]
         if not validate(value1) or not validate(value2):
             st.warning(f"Values must be between {method['Lower_Limit']} and {method['Upper_Limit']} {unit}")
@@ -62,7 +66,7 @@ if selected_method and selected_method in methods:
             tolerance_max = avg + tolerance_075R
             decimals = method["Number_of_Decimals"]
 
-            st.subheader("Results")
+            st.subheader(f"Results — {selected_method}")
             st.markdown(f"""
             - **Unit**: {unit}  
             - **Average (X)**: {avg:.{decimals}f}  
@@ -71,6 +75,7 @@ if selected_method and selected_method in methods:
             - **Reproducibility (R)**: {R:.{decimals}f} — {'✅ PASS' if R_pass else '❌ FAIL'}  
             - **0.75R Tolerance Range**: {tolerance_min:.{decimals}f} to {tolerance_max:.{decimals}f}
             """)
+
             if st.button("💾 Save Results"):
                 with open("results.txt", "w") as f:
                     f.write(f"Method: {selected_method}\n")
@@ -79,6 +84,11 @@ if selected_method and selected_method in methods:
                     f.write(f"r: {r:.{decimals}f} {'PASS' if r_pass else 'FAIL'}\n")
                     f.write(f"R: {R:.{decimals}f} {'PASS' if R_pass else 'FAIL'}\n")
                 st.success("Results saved to results.txt")
+
+            with st.expander("🧠 Show Calculation Formulas"):
+                st.markdown(f"- **Formula for r**: `{method['formula_r'] or 'N/A'}`")
+                st.markdown(f"- **Formula for R**: `{method['formula_R'] or 'N/A'}`")
+                st.markdown(f"- **Decimals Used**: `{decimals}`")
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
