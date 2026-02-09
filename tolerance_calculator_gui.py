@@ -52,8 +52,11 @@ def calculate_tolerance():
         method = methods[selected_method]
         unit = method["unit"]
 
-        value1 = float(value1_entry.get())
-        value2 = float(value2_entry.get())
+        try:
+            value1 = float(value1_entry.get())
+            value2 = float(value2_entry.get())
+        except ValueError:
+            raise ValueError("Both values must be numeric.")
         validate_input(value1, method["Lower_Limit"], method["Upper_Limit"])
         validate_input(value2, method["Lower_Limit"], method["Upper_Limit"])
 
