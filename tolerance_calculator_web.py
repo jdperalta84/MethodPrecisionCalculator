@@ -152,6 +152,42 @@ html, body, [class*="css"] {
     font-style: italic;
 }
 
+/* ── Rich method info panel ── */
+.method-info-panel {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 1.2rem;
+}
+.info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid #21262d;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+.info-row:last-child { border-bottom: none; }
+.info-icon {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    margin-top: 0.05rem;
+}
+.info-text {
+    color: #8b949e;
+}
+.info-text strong {
+    color: #c9d1d9;
+    font-weight: 600;
+    font-family: "DM Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-right: 0.3rem;
+}
+
 /* ── Input labels ── */
 label, .stSelectbox label, .stNumberInput label {
     font-family: 'DM Mono', monospace !important;
@@ -271,6 +307,7 @@ def load_methods(file_path):
                 continue
         for row in rows:
             method = row["Method"].strip()
+            year = row.get("Revision_Year", "").strip()
             methods_dict[method] = {
                 "r": float(row["r"]) if row.get("r", "").strip() else None,
                 "R": float(row["R"]) if row.get("R", "").strip() else None,
@@ -281,6 +318,11 @@ def load_methods(file_path):
                 "lower": float(row["Lower_Limit"]) if row.get("Lower_Limit", "").strip() else None,
                 "upper": float(row["Upper_Limit"]) if row.get("Upper_Limit", "").strip() else None,
                 "notes": row.get("Notes", "").strip(),
+                "year": year,
+                "matrix": row.get("Sample_Matrix", "").strip(),
+                "conc_range": row.get("Conc_Range", "").strip(),
+                "scope": row.get("Scope", "").strip(),
+                "display_label": f"{method}  ({year})" if year else method,
             }
     except Exception as e:
         st.error(f"Error loading methods: {e}")
@@ -294,6 +336,11 @@ def group_methods(methods_dict):
         prefix = name.split("-")[0].strip()
         groups.setdefault(prefix, []).append(name)
     return groups
+
+
+def build_label_map(methods_dict):
+    """Returns {display_label: method_key} for selectbox use."""
+    return {v["display_label"]: k for k, v in methods_dict.items()}
 
 
 def safe_eval(formula, avg):
@@ -338,7 +385,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── LOAD DATA ───────────────────────────────────────────────────────────────
-methods = load_methods("methods.csv")
+methods = load_methods("methods_enriched.csv")
 groups = group_methods(methods)
 
 # ─── TABS ────────────────────────────────────────────────────────────────────
@@ -351,6 +398,7 @@ tab_calc, tab_thermo, tab_history = st.tabs(["Calculator", "Thermometer Check", 
 with tab_calc:
 
     # Method selection with group filter
+    label_map = build_label_map(methods)
     all_prefixes = sorted(groups.keys())
     col_filter, col_method = st.columns([1, 2])
 
@@ -359,14 +407,31 @@ with tab_calc:
 
     with col_method:
         if base_filter == "All":
-            method_list = list(methods.keys())
+            label_list = [methods[k]["display_label"] for k in methods.keys()]
         else:
-            method_list = groups.get(base_filter, [])
-        selected_method = st.selectbox("Method / Procedure", method_list, key="sel_method")
+            label_list = [methods[k]["display_label"] for k in groups.get(base_filter, [])]
+        selected_label = st.selectbox("Method / Procedure", label_list, key="sel_method")
 
-    # Method notes
-    if selected_method and methods[selected_method].get("notes"):
-        st.markdown(f'<div class="method-note">📋 {methods[selected_method]["notes"]}</div>', unsafe_allow_html=True)
+    # Resolve label back to method key
+    selected_method = label_map.get(selected_label, selected_label)
+
+    # ── Rich method info panel ──
+    if selected_method and selected_method in methods:
+        mi = methods[selected_method]
+        info_parts = []
+        if mi.get("notes"):
+            info_parts.append(f'<div class="info-row"><span class="info-icon">📋</span><span class="info-text"><strong>Notes:</strong> {mi["notes"]}</span></div>')
+        if mi.get("matrix"):
+            info_parts.append(f'<div class="info-row"><span class="info-icon">🧪</span><span class="info-text"><strong>Matrix:</strong> {mi["matrix"]}</span></div>')
+        if mi.get("conc_range"):
+            info_parts.append(f'<div class="info-row"><span class="info-icon">📊</span><span class="info-text"><strong>Concentration Range:</strong> {mi["conc_range"]}</span></div>')
+        if mi.get("scope"):
+            info_parts.append(f'<div class="info-row"><span class="info-icon">🔍</span><span class="info-text"><strong>Scope:</strong> {mi["scope"]}</span></div>')
+        if info_parts:
+            st.markdown(
+                '<div class="method-info-panel">' + "".join(info_parts) + '</div>',
+                unsafe_allow_html=True
+            )
 
     # Value inputs
     col1, col2 = st.columns(2)
