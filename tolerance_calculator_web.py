@@ -409,6 +409,8 @@ with tab_calc:
 
                 r_pass = diff <= r
                 R_pass = diff <= R
+                tolerance_075R = 0.75 * R
+                tol_pass = diff <= tolerance_075R
 
                 # ── Results Card ──
                 st.markdown('<div class="result-card">', unsafe_allow_html=True)
@@ -440,8 +442,14 @@ with tab_calc:
                     </span>
                 </div>
                 <div class="metric-row">
-                    <span class="metric-label">0.75R Range</span>
-                    <span class="metric-value">{avg - 0.75*R:.{decimals}f} – {avg + 0.75*R:.{decimals}f} {unit}</span>
+                    <span class="metric-label">0.75R Tolerance</span>
+                    <span class="metric-value">{tolerance_075R:.{decimals}f} {unit}&nbsp;&nbsp;
+                        <span class="badge {'badge-pass' if tol_pass else 'badge-fail'}">{'PASS' if tol_pass else 'FAIL'}</span>
+                    </span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">0.75R Acceptable Range</span>
+                    <span class="metric-value">{avg - tolerance_075R:.{decimals}f} – {avg + tolerance_075R:.{decimals}f} {unit}</span>
                 </div>
                 """
                 st.markdown(rows_html, unsafe_allow_html=True)
@@ -477,7 +485,9 @@ with tab_calc:
                     "|Diff|": round(diff, decimals),
                     "r": round(r, decimals),
                     "R": round(R, decimals),
+                    "0.75R": round(tolerance_075R, decimals),
                     "r ✓": "✅" if r_pass else "❌",
+                    "0.75R ✓": "✅" if tol_pass else "❌",
                     "R ✓": "✅" if R_pass else "❌",
                 })
 
