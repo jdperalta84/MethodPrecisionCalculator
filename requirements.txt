@@ -1,2 +1,14 @@
+# Existing
 streamlit
 pytest
+
+# Trading notification app
+yfinance>=0.2.40
+pandas>=2.0
+feedparser>=6.0
+vaderSentiment>=3.3.2
+requests>=2.31
+APScheduler>=3.10
+
+# Optional — WhatsApp notifications (remove if not needed)
+# twilio>=9.0
