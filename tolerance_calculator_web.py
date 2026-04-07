@@ -1,5 +1,4 @@
 import streamlit as st
-import csv
 import io
 from datetime import datetime
 
@@ -296,37 +295,35 @@ label, .stSelectbox label, .stNumberInput label {
 # ─── DATA LOADING ─────────────────────────────────────────────────────────────
 @st.cache_data
 def load_methods(file_path):
-    methods_dict = {}
+    """Load methods using core loader and return a dict compatible with the UI.
+    The core loader returns ``Method`` objects; we convert them to the legacy dict
+    shape expected by the rest of this script.
+    """
     try:
-        for enc in ["utf-8", "iso-8859-1"]:
-            try:
-                with open(file_path, mode="r", encoding=enc) as f:
-                    rows = list(csv.DictReader(f))
-                break
-            except UnicodeDecodeError:
-                continue
-        for row in rows:
-            method = row["Method"].strip()
-            year = row.get("Revision_Year", "").strip()
-            methods_dict[method] = {
-                "r": float(row["r"]) if row.get("r", "").strip() else None,
-                "R": float(row["R"]) if row.get("R", "").strip() else None,
-                "unit": row.get("Unit", ""),
-                "formula_r": row.get("Formula_r", "").strip(),
-                "formula_R": row.get("Formula_R", "").strip(),
-                "decimals": int(row["Number_of_Decimals"]) if row.get("Number_of_Decimals", "").strip() else 4,
-                "lower": float(row["Lower_Limit"]) if row.get("Lower_Limit", "").strip() else None,
-                "upper": float(row["Upper_Limit"]) if row.get("Upper_Limit", "").strip() else None,
-                "notes": row.get("Notes", "").strip(),
-                "year": year,
-                "matrix": row.get("Sample_Matrix", "").strip(),
-                "conc_range": row.get("Conc_Range", "").strip(),
-                "scope": row.get("Scope", "").strip(),
-                "display_label": f"{method}  ({year})" if year else method,
+        from core import load_methods as core_load
+        core_dict = core_load(file_path)
+        methods_dict: dict = {}
+        for name, m in core_dict.items():
+            methods_dict[name] = {
+                "r": m.r,
+                "R": m.R,
+                "unit": m.unit,
+                "formula_r": m.formula_r,
+                "formula_R": m.formula_R,
+                "decimals": m.decimals,
+                "lower": m.lower,
+                "upper": m.upper,
+                "notes": m.notes,
+                "year": m.year,
+                "matrix": m.matrix,
+                "conc_range": m.conc_range,
+                "scope": m.scope,
+                "display_label": m.display_label,
             }
+        return methods_dict
     except Exception as e:
         st.error(f"Error loading methods: {e}")
-    return methods_dict
+        return {}
 
 
 def group_methods(methods_dict):
@@ -344,10 +341,9 @@ def build_label_map(methods_dict):
 
 
 def safe_eval(formula, avg):
-    """Safer formula evaluation using only math context."""
-    import math
-    allowed = {"avg": avg, "abs": abs, "sqrt": math.sqrt, "log": math.log, "exp": math.exp}
-    return eval(compile(formula, "<string>", "eval"), {"__builtins__": {}}, allowed)
+    """Delegate to core.safe_eval for safety."""
+    from core import safe_eval as core_safe_eval
+    return core_safe_eval(formula, avg)
 
 
 def format_result_text(method_name, unit, avg, diff, r, R, r_pass, R_pass, decimals, v1, v2):
